@@ -1,4 +1,4 @@
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion';
 import { Heart, X, Code, User } from 'lucide-react';
 import { useState } from 'react';
 
@@ -23,12 +23,26 @@ export default function SwipeCard({ post, onSwipe, isTop }: SwipeCardProps) {
     const rotate = useTransform(x, [-200, 200], [-30, 30]);
     const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
 
+    const controls = useAnimation(); // ✅ 추가된 부분
+
     const handleDragEnd = (event: any, info: any) => {
         if (info.offset.x > 100) {
             onSwipe('right');
         } else if (info.offset.x < -100) {
             onSwipe('left');
         }
+    };
+
+    const handleSwipe = async (direction: 'left' | 'right') => {
+        const toX = direction === 'left' ? -300 : 300;
+
+        await controls.start({
+            x: toX,
+            opacity: 0,
+            transition: { duration: 0.3 },
+        });
+
+        onSwipe(direction);
     };
 
     return (
@@ -38,14 +52,18 @@ export default function SwipeCard({ post, onSwipe, isTop }: SwipeCardProps) {
             drag={isTop ? 'x' : false}
             dragConstraints={{ left: -300, right: 300 }}
             onDragEnd={handleDragEnd}
-            animate={isTop ? {} : { scale: 0.95, y: 10 }}
+            animate={isTop ? controls : { scale: 0.95, y: 10 }} // ✅ 수정
         >
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b">
                     <div className="flex items-center space-x-3">
                         {post.profile_image ? (
-                            <img src={post.profile_image} alt={post.username} className="w-10 h-10 rounded-full object-cover" />
+                            <img
+                                src={`http://localhost:8000${post.profile_image}`}
+                                alt={post.username}
+                                className="w-10 h-10 rounded-full object-cover"
+                            />
                         ) : (
                             <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
                                 <User className="w-6 h-6 text-gray-500" />
@@ -106,13 +124,13 @@ export default function SwipeCard({ post, onSwipe, isTop }: SwipeCardProps) {
                 {/* Action Buttons */}
                 <div className="flex justify-center space-x-6 pb-6">
                     <button
-                        onClick={() => onSwipe('left')}
+                        onClick={() => handleSwipe('left')}
                         className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center hover:bg-red-100 transition-colors"
                     >
                         <X className="w-7 h-7 text-red-500" />
                     </button>
                     <button
-                        onClick={() => onSwipe('right')}
+                        onClick={() => handleSwipe('right')}
                         className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center hover:bg-green-100 transition-colors"
                     >
                         <Heart className="w-7 h-7 text-green-500" />
