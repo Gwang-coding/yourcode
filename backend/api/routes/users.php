@@ -72,7 +72,6 @@ function getUserProfile($db, $profileId) {
     
     echo json_encode($user);
 }
-
 function updateProfile($db, $userId) {
     $data = json_decode(file_get_contents("php://input"));
     
@@ -85,8 +84,26 @@ function updateProfile($db, $userId) {
     }
     
     if(isset($data->profile_image)) {
-        $updates[] = "profile_image = :profile_image";
-        $params['profile_image'] = $data->profile_image;
+        // Base64 이미지 처리
+        if(strpos($data->profile_image, 'data:image') === 0) {
+            // Base64를 파일로 저장
+            $imageData = explode(',', $data->profile_image);
+            $imageBase64 = $imageData[1];
+            $imageDecoded = base64_decode($imageBase64);
+            
+            // 파일명 생성
+            $filename = 'profile_' . $userId . '_' . uniqid() . '.jpg';
+            $filepath = __DIR__ . '/../../uploads/' . $filename;
+            
+            // 파일 저장
+            if(file_put_contents($filepath, $imageDecoded)) {
+                $updates[] = "profile_image = :profile_image";
+                $params['profile_image'] = '/uploads/' . $filename;
+            }
+        } else {
+            $updates[] = "profile_image = :profile_image";
+            $params['profile_image'] = $data->profile_image;
+        }
     }
     
     if(isset($data->github_url)) {
@@ -114,4 +131,3 @@ function updateProfile($db, $userId) {
         echo json_encode(['message' => 'Failed to update profile']);
     }
 }
-?>
