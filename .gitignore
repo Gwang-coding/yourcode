@@ -1,0 +1,41 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# dotenv
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+*.out
+*.pid
+
+# Build output
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Docker
+**/data/
+**/tmp/
+**/volumes/
+**/docker-compose.override.yml
+
+# TypeScript
+*.tsbuildinfo
+
+# Mac
+.DS_Store
+
+# OS generated
+Thumbs.db
+ehthumbs.db
