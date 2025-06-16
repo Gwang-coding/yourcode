@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+    # PHP 서비스
+    php:
+        image: php:8.2-apache
+        container_name: yourcode-php
+        volumes:
+            - ./backend:/var/www/html
+            - ./docker/php/apache.conf:/etc/apache2/sites-available/000-default.conf
+        ports:
+            - '8000:80'
+        environment:
+            - APACHE_DOCUMENT_ROOT=/var/www/html
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+        depends_on:
+            - mysql
+        networks:
+            - yourcode-network
+
+    # MySQL 서비스
+    mysql:
+        image: mysql:8.0
+        container_name: yourcode-mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: yourcode_db
+            MYSQL_USER: yourcode
+            MYSQL_PASSWORD: yourcode123
+        ports:
+            - '3306:3306'
+        volumes:
+            - mysql_data:/var/lib/mysql
+            - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+        networks:
+            - yourcode-network
+
+    # phpMyAdmin (선택사항)
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: yourcode-phpmyadmin
+        environment:
+            PMA_HOST: mysql
+            PMA_PORT: 3306
+            MYSQL_ROOT_PASSWORD: root
+        ports:
+            - '8080:80'
+        depends_on:
+            - mysql
+        networks:
+            - yourcode-network
+
+    # Next.js 서비스
+    nextjs:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+        container_name: yourcode-nextjs
+        volumes:
+            - ./frontend:/app
+            - /app/node_modules
+            - /app/.next
+        ports:
+            - '3000:3000'
+        environment:
+            - NODE_ENV=development
+            - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+        command: npm run dev
+        networks:
+            - yourcode-network
+
+volumes:
+    mysql_data:
+
+networks:
+    yourcode-network:
+        driver: bridge
