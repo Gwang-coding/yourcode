@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { postsAPI, usersAPI } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import CodeDetailModal from '@/components/CodeDetailModal';
+import EditProfileModal from '@/components/EditProfileModal';
 import toast from 'react-hot-toast';
-import { Code2, User, Heart, Grid3X3, LogOut, Edit, Upload } from 'lucide-react';
+import { Code2, User, Heart, Grid3X3, LogOut, Edit, Upload, Trash2 } from 'lucide-react';
 
 interface Post {
     id: number;
@@ -38,6 +39,8 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
     const [showDetail, setShowDetail] = useState(false);
+    const [showEditProfile, setShowEditProfile] = useState(false);
+    const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
 
     useEffect(() => {
         if (!user) {
@@ -70,6 +73,21 @@ export default function ProfilePage() {
         toast.success('Logged out successfully');
     };
 
+    const handleDeletePost = async (postId: number) => {
+        if (!confirm('Are you sure you want to delete this post?')) return;
+
+        setDeletingPostId(postId);
+        try {
+            await postsAPI.deletePost(postId);
+            setPosts(posts.filter((post) => post.id !== postId));
+            toast.success('Post deleted successfully');
+        } catch (error) {
+            toast.error('Failed to delete post');
+        } finally {
+            setDeletingPostId(null);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -100,7 +118,11 @@ export default function ProfilePage() {
                 <div className="bg-white rounded-lg shadow-md p-6 mb-8">
                     <div className="flex items-start space-x-6">
                         {profile?.profile_image ? (
-                            <img src={profile.profile_image} alt={profile.username} className="w-24 h-24 rounded-full object-cover" />
+                            <img
+                                src={`http://localhost:8000${profile.profile_image}`}
+                                alt={profile.username}
+                                className="w-24 h-24 rounded-full object-cover"
+                            />
                         ) : (
                             <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
                                 <User className="w-12 h-12 text-gray-500" />
@@ -110,7 +132,10 @@ export default function ProfilePage() {
                         <div className="flex-1">
                             <div className="flex items-center justify-between mb-4">
                                 <h1 className="text-2xl font-bold">{profile?.username}</h1>
-                                <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                                <button
+                                    onClick={() => setShowEditProfile(true)}
+                                    className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                                >
                                     <Edit className="w-4 h-4" />
                                     <span>Edit Profile</span>
                                 </button>
@@ -187,6 +212,21 @@ export default function ProfilePage() {
                                             alt={post.title}
                                             className="w-full h-full object-contain"
                                         />
+                                        {/* Delete button */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeletePost(post.id);
+                                            }}
+                                            disabled={deletingPostId === post.id}
+                                            className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 disabled:opacity-50"
+                                        >
+                                            {deletingPostId === post.id ? (
+                                                <Code2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="w-4 h-4" />
+                                            )}
+                                        </button>
                                     </div>
                                     <div className="p-4">
                                         <h3 className="font-semibold mb-1">{post.title}</h3>
@@ -214,6 +254,9 @@ export default function ProfilePage() {
                     setSelectedPostId(null);
                 }}
             />
+
+            {/* Edit Profile Modal */}
+            <EditProfileModal isOpen={showEditProfile} onClose={() => setShowEditProfile(false)} onUpdate={fetchProfile} />
         </div>
     );
 }
